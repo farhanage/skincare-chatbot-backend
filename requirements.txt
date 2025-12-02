@@ -2,25 +2,16 @@
 fastapi==0.104.1
 uvicorn==0.24.0
 python-multipart==0.0.6
+python-dotenv==1.0.0
 PyJWT==2.8.0
 email-validator==2.1.0
+google-generativeai>=0.3.0
 
-# --- TensorFlow track (Apple Silicon) ---
-tensorflow==2.17.1
-keras-cv==0.8.2
-tf-keras==2.17.0          # shim agar Transformers 4.35 jalan dgn Keras 3
-
-# --- HF stack (compatible versions for PyTorch + Transformers) ---
-transformers>=4.35.0
-huggingface_hub>=0.16.4,<0.27  # Compatible version range
-torch>=2.2.0
-torchvision>=0.17.0
-timm>=0.9.12              # Vision Transformers library
-
-# --- Vector DB & tools ---
-chromadb==0.4.18
-scikit-learn==1.4.2
-Pillow==10.1.0
+# --- Database (PostgreSQL with SQLAlchemy) ---
+sqlalchemy==2.0.23
+psycopg2-binary==2.9.9
+alembic==1.13.1
+bcrypt==3.2.2
 
 # --- Pydantic / protobuf pin buat kompat --
 pydantic==2.5.0

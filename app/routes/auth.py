@@ -6,8 +6,9 @@ from typing import Optional
 import jwt
 from datetime import datetime, timedelta
 import logging
+import os
 
-from app.database.auth_db import create_user, verify_user, get_user_by_id
+from app.services.auth_db import create_user, verify_user, get_user_by_id
 
 logger = logging.getLogger(__name__)
 
@@ -15,9 +16,9 @@ router = APIRouter()
 security = HTTPBearer()
 
 # JWT Configuration
-SECRET_KEY = "your-secret-key-change-this-in-production-2024"  # TODO: Move to env
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24  # 24 hours
+SECRET_KEY = os.getenv("JWT_SECRET_KEY")
+ALGORITHM = os.getenv("JWT_ALGORITHM")
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("JWT_ACCESS_TOKEN_EXPIRE_MINUTES" ))
 
 class RegisterRequest(BaseModel):
     username: str

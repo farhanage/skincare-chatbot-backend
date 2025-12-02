@@ -3,9 +3,12 @@ from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from typing import Optional, List
 import logging
+from datetime import datetime
+from sqlalchemy.orm import Session
 
-from app.database.products_data import PRODUCTS
-from app.database.auth_db import add_to_cart, get_cart_items, update_cart_item, clear_cart
+from app.services.auth_db import add_to_cart, get_cart_items, update_cart_item, clear_cart
+from app.services.connection import get_db
+from app.models.models import Product
 from app.routes.auth import verify_token
 
 logger = logging.getLogger(__name__)
@@ -34,26 +37,44 @@ class CartResponse(BaseModel):
 @router.get("/products", response_model=ProductResponse)
 async def get_products(
     category: Optional[str] = None,
-    search: Optional[str] = None
+    search: Optional[str] = None,
+    db: Session = Depends(get_db)
 ):
     """Get all products with optional filtering"""
     try:
-        filtered_products = PRODUCTS
+        # Start with base query
+        query = db.query(Product)
         
         # Filter by category
         if category:
-            filtered_products = [
-                p for p in filtered_products
-                if p["category"].lower() == category.lower()
-            ]
+            query = query.filter(Product.category.ilike(f"%{category}%"))
         
         # Search by name or description
         if search:
-            search_lower = search.lower()
-            filtered_products = [
-                p for p in filtered_products
-                if search_lower in p["name"].lower() or search_lower in p["description"].lower()
-            ]
+            search_term = f"%{search}%"
+            query = query.filter(
+                (Product.name.ilike(search_term)) | 
+                (Product.description.ilike(search_term))
+            )
+        
+        # Execute query
+        products = query.all()
+        
+        # Convert to dict
+        filtered_products = [
+            {
+                "id": str(p.id),
+                "name": p.name,
+                "description": p.description or "",
+                "price": float(p.price) if p.price else 0,
+                "category": p.category or "",
+                "image_url": p.image_url or "",
+                "for_conditions": p.for_conditions or [],
+                "ingredients": p.ingredients or "",
+                "usage": p.usage or ""
+            }
+            for p in products
+        ]
         
         return ProductResponse(
             success=True,
@@ -66,17 +87,27 @@ async def get_products(
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/products/{product_id}")
-async def get_product(product_id: str):
+async def get_product(product_id: str, db: Session = Depends(get_db)):
     """Get single product by ID"""
     try:
-        product = next((p for p in PRODUCTS if p["id"] == product_id), None)
+        product = db.query(Product).filter(Product.id == int(product_id)).first()
         
         if not product:
             raise HTTPException(status_code=404, detail="Produk tidak ditemukan")
         
         return {
             "success": True,
-            "product": product
+            "product": {
+                "id": str(product.id),
+                "name": product.name,
+                "description": product.description or "",
+                "price": float(product.price) if product.price else 0,
+                "category": product.category or "",
+                "image_url": product.image_url or "",
+                "for_conditions": product.for_conditions or [],
+                "ingredients": product.ingredients or "",
+                "usage": product.usage or ""
+            }
         }
         
     except HTTPException:
@@ -88,12 +119,13 @@ async def get_product(product_id: str):
 @router.post("/cart/add")
 async def add_product_to_cart(
     request: AddToCartRequest,
-    current_user: dict = Depends(verify_token)
+    current_user: dict = Depends(verify_token),
+    db: Session = Depends(get_db)
 ):
     """Add product to cart (requires authentication)"""
     try:
         # Verify product exists
-        product = next((p for p in PRODUCTS if p["id"] == request.product_id), None)
+        product = db.query(Product).filter(Product.id == int(request.product_id)).first()
         if not product:
             raise HTTPException(status_code=404, detail="Produk tidak ditemukan")
         
@@ -119,7 +151,10 @@ async def add_product_to_cart(
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/cart", response_model=CartResponse)
-async def get_cart(current_user: dict = Depends(verify_token)):
+async def get_cart(
+    current_user: dict = Depends(verify_token),
+    db: Session = Depends(get_db)
+):
     """Get user's cart"""
     try:
         cart_items = get_cart_items(current_user["id"])
@@ -130,12 +165,20 @@ async def get_cart(current_user: dict = Depends(verify_token)):
         total_items = 0
         
         for item in cart_items:
-            product = next((p for p in PRODUCTS if p["id"] == item["product_id"]), None)
+            product = db.query(Product).filter(Product.id == int(item["product_id"])).first()
             if product:
-                item_total = product["price"] * item["quantity"]
+                product_dict = {
+                    "id": str(product.id),
+                    "name": product.name,
+                    "description": product.description or "",
+                    "price": float(product.price) if product.price else 0,
+                    "category": product.category or "",
+                    "image_url": product.image_url or ""
+                }
+                item_total = product_dict["price"] * item["quantity"]
                 enriched_items.append({
                     **item,
-                    "product": product,
+                    "product": product_dict,
                     "item_total": item_total
                 })
                 total_price += item_total
@@ -200,7 +243,10 @@ async def clear_user_cart(current_user: dict = Depends(verify_token)):
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/checkout")
-async def checkout(current_user: dict = Depends(verify_token)):
+async def checkout(
+    current_user: dict = Depends(verify_token),
+    db: Session = Depends(get_db)
+):
     """Checkout (simplified - just clears cart)"""
     try:
         cart_items = get_cart_items(current_user["id"])
@@ -211,9 +257,9 @@ async def checkout(current_user: dict = Depends(verify_token)):
         # Calculate total
         total_price = 0.0
         for item in cart_items:
-            product = next((p for p in PRODUCTS if p["id"] == item["product_id"]), None)
+            product = db.query(Product).filter(Product.id == int(item["product_id"])).first()
             if product:
-                total_price += product["price"] * item["quantity"]
+                total_price += float(product.price) * item["quantity"]
         
         # Clear cart (in real app, create order record first)
         clear_cart(current_user["id"])
@@ -230,5 +276,3 @@ async def checkout(current_user: dict = Depends(verify_token)):
     except Exception as e:
         logger.error(f"Checkout error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
-
-from datetime import datetime
