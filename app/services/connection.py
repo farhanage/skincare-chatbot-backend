@@ -16,6 +16,10 @@ logger = logging.getLogger(__name__)
 # Format: postgresql://user:password@host:port/database
 DATABASE_URL = os.getenv("DATABASE_URL")
 
+# postgres:// to postgresql:// for SQLAlchemy 2.0+
+if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+
 # Create SQLAlchemy engine
 engine = create_engine(
     DATABASE_URL,
