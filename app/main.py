@@ -25,8 +25,7 @@ app = FastAPI(
     title="Skincare AI Backend", 
     version="1.0.0",
     docs_url=None,  # Disable default docs
-    redoc_url=None,
-    redirect_slashes=False  
+    redoc_url=None
 )
 
 # Proxy headers middleware - MUST be first to handle X-Forwarded-* headers from Heroku
