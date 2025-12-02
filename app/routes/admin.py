@@ -20,7 +20,7 @@ def verify_admin(current_user: dict = Depends(verify_token)) -> dict:
         raise HTTPException(status_code=403, detail="Admin access required")
     return current_user
 
-@router.get("/debug/info")
+@router.get("/info")
 async def debug_info(admin: dict = Depends(verify_admin)):
     """Get system debug information"""
     try:
@@ -40,7 +40,7 @@ async def debug_info(admin: dict = Depends(verify_admin)):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/debug/users")
+@router.get("/users")
 async def debug_users(admin: dict = Depends(verify_admin)):
     """Get all users (admin only)"""
     try:
@@ -67,7 +67,7 @@ async def debug_users(admin: dict = Depends(verify_admin)):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/debug/products")
+@router.get("/products")
 async def debug_products(admin: dict = Depends(verify_admin)):
     """Get all products from database (admin only)"""
     try:
@@ -93,7 +93,7 @@ async def debug_products(admin: dict = Depends(verify_admin)):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/debug/carts")
+@router.get("/carts")
 async def debug_carts(admin: dict = Depends(verify_admin)):
     """Get all cart items (admin only)"""
     try:
@@ -120,7 +120,7 @@ async def debug_carts(admin: dict = Depends(verify_admin)):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/debug/orders")
+@router.get("/orders")
 async def debug_orders(admin: dict = Depends(verify_admin)):
     """Get all orders (admin only)"""
     try:
@@ -150,7 +150,7 @@ async def debug_orders(admin: dict = Depends(verify_admin)):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/debug/tables")
+@router.get("/tables")
 async def debug_tables(admin: dict = Depends(verify_admin)):
     """Get all database tables structure (admin only)"""
     try:
@@ -174,7 +174,7 @@ async def debug_tables(admin: dict = Depends(verify_admin)):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/debug/query")
+@router.post("/query")
 async def debug_query(
     query: str,
     admin: dict = Depends(verify_admin)

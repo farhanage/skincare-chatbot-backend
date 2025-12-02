@@ -37,7 +37,7 @@ class OrderResponse(BaseModel):
     class Config:
         from_attributes = True
 
-@router.post("/orders")
+@router.post("/add_order")
 async def create_order(
     order_data: OrderCreate,
     current_user: dict = Depends(verify_token),
@@ -98,46 +98,7 @@ async def create_order(
         logger.error(f"Create order error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("/orders/my")
-async def get_my_orders(
-    current_user: dict = Depends(verify_token),
-    db: Session = Depends(get_db)
-):
-    """Get all orders for the current user"""
-    try:
-        orders = db.query(Order).filter(
-            Order.user_id == current_user["id"]
-        ).order_by(Order.created_at.desc()).all()
-        
-        result = []
-        for order in orders:
-            items = []
-            for item in order.items:
-                product = db.query(Product).filter(Product.id == item.product_id).first()
-                items.append({
-                    "product_id": item.product_id,
-                    "product_name": product.name if product else "Unknown",
-                    "quantity": item.quantity,
-                    "price": float(item.price)
-                })
-            
-            result.append({
-                "id": order.id,
-                "total_price": float(order.total_price),
-                "status": order.status,
-                "shipping_address": order.shipping_address,
-                "payment_method": order.payment_method,
-                "notes": order.notes,
-                "created_at": order.created_at.isoformat(),
-                "items": items
-            })
-        
-        return {"success": True, "orders": result}
-    except Exception as e:
-        logger.error(f"Get user orders error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-@router.get("/orders/{order_id}")
+@router.get("/{order_id}")
 async def get_order(
     order_id: int,
     current_user: dict = Depends(verify_token),
@@ -182,7 +143,7 @@ async def get_order(
         logger.error(f"Get order error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.put("/orders/{order_id}/status")
+@router.put("/{order_id}/status")
 async def update_order_status(
     order_id: int,
     status: str,

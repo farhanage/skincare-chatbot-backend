@@ -56,10 +56,10 @@ try:
     from app.routes.admin import router as admin_router
     from app.routes.orders import router as orders_router
     
-    # Register dengan prefix API v1
+    # Register dengan prefix /api
     app.include_router(auth_router, prefix="/api/auth", tags=["authentication"])
     app.include_router(products_router, prefix="/api/products", tags=["products"])
-    app.include_router(admin_router, prefix="/api/admin", tags=["admin"])
+    app.include_router(admin_router, prefix="/api/debug", tags=["debug"])
     app.include_router(orders_router, prefix="/api/orders", tags=["orders"])
     
 except Exception as e:

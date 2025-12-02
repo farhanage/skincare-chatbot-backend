@@ -163,11 +163,3 @@ async def login(
     except Exception as e:
         logger.error(f"Login error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
-
-@router.get("/me")
-async def get_current_user(current_user: dict = Depends(verify_token)):
-    """Get current user info"""
-    return {
-        "success": True,
-        "user": current_user
-    }

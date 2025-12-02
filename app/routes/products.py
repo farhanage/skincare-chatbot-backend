@@ -34,7 +34,7 @@ class CartResponse(BaseModel):
     total_items: int
     total_price: float
 
-@router.get("/products", response_model=ProductResponse)
+@router.get("/", response_model=ProductResponse)
 async def get_products(
     category: Optional[str] = None,
     search: Optional[str] = None,
@@ -86,37 +86,7 @@ async def get_products(
         logger.error(f"Get products error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("/products/{product_id}")
-async def get_product(product_id: str, db: Session = Depends(get_db)):
-    """Get single product by ID"""
-    try:
-        product = db.query(Product).filter(Product.id == int(product_id)).first()
-        
-        if not product:
-            raise HTTPException(status_code=404, detail="Produk tidak ditemukan")
-        
-        return {
-            "success": True,
-            "product": {
-                "id": str(product.id),
-                "name": product.name,
-                "description": product.description or "",
-                "price": float(product.price) if product.price else 0,
-                "category": product.category or "",
-                "image_url": product.image_url or "",
-                "for_conditions": product.for_conditions or [],
-                "ingredients": product.ingredients or "",
-                "usage": product.usage or ""
-            }
-        }
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Get product error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-@router.post("/cart/add")
+@router.post("/add_to_cart")
 async def add_product_to_cart(
     request: AddToCartRequest,
     current_user: dict = Depends(verify_token),
@@ -165,6 +135,7 @@ async def get_cart(
         total_items = 0
         
         for item in cart_items:
+            logger.debug(f"Cart item: {item}")
             product = db.query(Product).filter(Product.id == int(item["product_id"])).first()
             if product:
                 product_dict = {
@@ -195,7 +166,7 @@ async def get_cart(
         logger.error(f"Get cart error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.put("/cart/update")
+@router.put("/update_cart")
 async def update_cart(
     request: UpdateCartRequest,
     current_user: dict = Depends(verify_token)
@@ -222,7 +193,7 @@ async def update_cart(
         logger.error(f"Update cart error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.delete("/cart/clear")
+@router.delete("/clear_cart")
 async def clear_user_cart(current_user: dict = Depends(verify_token)):
     """Clear user's cart"""
     try:
@@ -275,4 +246,34 @@ async def checkout(
         raise
     except Exception as e:
         logger.error(f"Checkout error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/{product_id}")
+async def get_product(product_id: str, db: Session = Depends(get_db)):
+    """Get single product by ID"""
+    try:
+        product = db.query(Product).filter(Product.id == int(product_id)).first()
+        
+        if not product:
+            raise HTTPException(status_code=404, detail="Produk tidak ditemukan")
+        
+        return {
+            "success": True,
+            "product": {
+                "id": str(product.id),
+                "name": product.name,
+                "description": product.description or "",
+                "price": float(product.price) if product.price else 0,
+                "category": product.category or "",
+                "image_url": product.image_url or "",
+                "for_conditions": product.for_conditions or [],
+                "ingredients": product.ingredients or "",
+                "usage": product.usage or ""
+            }
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Get product error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
