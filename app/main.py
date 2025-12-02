@@ -1,6 +1,9 @@
 # app/main.py
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.trustedhost import TrustedHostMiddleware
+from fastapi.middleware.httpsredirect import HTTPSRedirectMiddleware
+from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 import logging
 from contextlib import asynccontextmanager
 from dotenv import load_dotenv
@@ -22,8 +25,12 @@ app = FastAPI(
     title="Skincare AI Backend", 
     version="1.0.0",
     docs_url=None,  # Disable default docs
-    redoc_url=None  # Disable default redoc
+    redoc_url=None,
+    redirect_slashes=False  
 )
+
+# Proxy headers middleware - MUST be first to handle X-Forwarded-* headers from Heroku
+app.add_middleware(ProxyHeadersMiddleware, trusted_hosts="*")
 
 # CORS middleware
 app.add_middleware(
