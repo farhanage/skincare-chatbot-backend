@@ -250,8 +250,19 @@ async def get_messages(
 ):
     """Get messages for a chat"""
     try:
+        # Debug logging
+        logger.info(f"Getting messages for chat {chat_id}, user {current_user['id']}")
+        
         # Verify access
         if not chat_service.verify_chat_access(db, chat_id, current_user["id"]):
+            # Check if chat exists
+            chat = chat_service.get_chat_session(db, chat_id)
+            if not chat:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Chat not found"
+                )
+            logger.warning(f"Access denied: chat {chat_id} belongs to user {chat.user_id}, but user {current_user['id']} tried to access")
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Access denied"
@@ -283,8 +294,19 @@ async def send_message(
 ):
     """Send message and get AI response"""
     try:
+        # Debug logging
+        logger.info(f"Sending message to chat {chat_id}, user {current_user['id']}")
+        
         # Verify access
         if not chat_service.verify_chat_access(db, chat_id, current_user["id"]):
+            # Check if chat exists
+            chat = chat_service.get_chat_session(db, chat_id)
+            if not chat:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Chat not found"
+                )
+            logger.warning(f"Access denied: chat {chat_id} belongs to user {chat.user_id}, but user {current_user['id']} tried to access")
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Access denied"

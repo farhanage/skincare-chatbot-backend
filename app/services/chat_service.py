@@ -128,10 +128,26 @@ def delete_chat_session(db: Session, chat_id: str) -> bool:
 
 def verify_chat_access(db: Session, chat_id: str, user_id: int) -> bool:
     """Verify user has access to chat"""
+    import logging
+    logger = logging.getLogger(__name__)
+    
     chat = db.query(ChatSession).filter(
         ChatSession.id == chat_id,
         ChatSession.user_id == user_id
     ).first()
+    
+    logger.info(f"verify_chat_access: chat_id={chat_id}, user_id={user_id}, found={chat is not None}")
+    
+    if chat:
+        logger.info(f"Chat found: id={chat.id}, user_id={chat.user_id}")
+    else:
+        # Check if chat exists at all
+        any_chat = db.query(ChatSession).filter(ChatSession.id == chat_id).first()
+        if any_chat:
+            logger.warning(f"Chat {chat_id} exists but belongs to user {any_chat.user_id}, not {user_id}")
+        else:
+            logger.warning(f"Chat {chat_id} does not exist in database")
+    
     return chat is not None
 
 
