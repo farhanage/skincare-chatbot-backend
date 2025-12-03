@@ -1,5 +1,5 @@
 # app/database/models.py
-from sqlalchemy import Column, Integer, DateTime, ForeignKey, Text, Numeric
+from sqlalchemy import Column, Integer, DateTime, ForeignKey, Text, Numeric, Boolean, JSON, String, Index
 from sqlalchemy.orm import declarative_base, relationship
 from datetime import datetime, timezone
 
@@ -20,6 +20,8 @@ class User(Base):
     # Relationships
     cart_items = relationship("CartItem", back_populates="user", cascade="all, delete-orphan")
     orders = relationship("Order", back_populates="user", cascade="all, delete-orphan")
+    chat_sessions = relationship("ChatSession", back_populates="user", cascade="all, delete-orphan")
+    chat_messages = relationship("ChatMessage", back_populates="user", cascade="all, delete-orphan")
     
     def __repr__(self):
         return f"<User(id={self.id}, username='{self.username}', email='{self.email}', role='{self.role}')>"
@@ -93,3 +95,39 @@ class OrderItem(Base):
         return (f"<OrderItem(id={self.id}, order_id={self.order_id}, "
                 f"product_id='{self.product_id}', product_name='{self.product_name}', "
                 f"quantity={self.quantity}, price={self.price})>")
+
+
+class ChatSession(Base):
+    __tablename__ = 'chat_sessions'
+    
+    id = Column(String(50), primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey('users.id', ondelete='CASCADE'), nullable=False, index=True)
+    title = Column(String(255), nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), index=True)
+    
+    # Relationships
+    user = relationship("User", back_populates="chat_sessions")
+    messages = relationship("ChatMessage", back_populates="chat_session", cascade="all, delete-orphan")
+    
+    def __repr__(self):
+        return f"<ChatSession(id='{self.id}', user_id={self.user_id}, title='{self.title}')>"
+
+
+class ChatMessage(Base):
+    __tablename__ = 'chat_messages'
+    
+    id = Column(String(50), primary_key=True, index=True)
+    chat_id = Column(String(50), ForeignKey('chat_sessions.id', ondelete='CASCADE'), nullable=False, index=True)
+    user_id = Column(Integer, ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
+    text = Column(Text, nullable=False)
+    is_bot = Column(Boolean, default=False)
+    timestamp = Column(DateTime, default=lambda: datetime.now(timezone.utc), index=True)
+    products = Column(JSON, nullable=True)
+    
+    # Relationships
+    chat_session = relationship("ChatSession", back_populates="messages")
+    user = relationship("User", back_populates="chat_messages")
+    
+    def __repr__(self):
+        return f"<ChatMessage(id='{self.id}', chat_id='{self.chat_id}', is_bot={self.is_bot})>"

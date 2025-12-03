@@ -61,12 +61,14 @@ try:
     from app.routes.products import router as products_router
     from app.routes.admin import router as admin_router
     from app.routes.orders import router as orders_router
+    from app.routes.chats import router as chats_router
     
     # Register dengan prefix /api
     app.include_router(auth_router, prefix="/api/auth", tags=["authentication"])
     app.include_router(products_router, prefix="/api/products", tags=["products"])
     app.include_router(admin_router, prefix="/api/debug", tags=["debug"])
     app.include_router(orders_router, prefix="/api/orders", tags=["orders"])
+    app.include_router(chats_router, prefix="/api", tags=["chats"])
     
 except Exception as e:
     logger.error(f" Routes loading failed: {e}")
