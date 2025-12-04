@@ -375,6 +375,36 @@ async def send_message(
             detail="Failed to send message"
         )
 
+@router.post("/chats/guest")
+async def create_guest_chat(
+    request: SendMessageRequest,
+    db: Session = Depends(get_db)
+):
+    """Create a guest chat session and get AI response without saving to DB"""
+    try:
+        # Create a temporary chat ID
+        import uuid
+        chat_id = str(uuid.uuid4())
+        
+        # Get AI response
+        ai_response = await chatbot_service.get_response(
+            user_message=request.text,
+            chat_history=[],
+            disease_context=request.disease_context,
+            available_products=[]
+        )
+        
+        return {
+            "chat_id": chat_id,
+            "response": ai_response
+        }
+        
+    except Exception as e:
+        logger.error(f"Create guest chat error: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to create guest chat"
+        )
 
 @router.get("/messages/{message_id}", response_model=MessageResponse)
 async def get_message(
