@@ -63,6 +63,8 @@ try:
     from app.routes.orders import router as orders_router
     from app.routes.chats import router as chats_router
     from app.routes.predict import router as predict_router
+    from app.routes.interactions import router as interactions_router
+    from app.routes.bandit import router as bandit_router
     
     # Register dengan prefix /api
     app.include_router(auth_router, prefix="/api/auth", tags=["authentication"])
@@ -71,6 +73,8 @@ try:
     app.include_router(orders_router, prefix="/api/orders", tags=["orders"])
     app.include_router(chats_router, prefix="/api", tags=["chats"])
     app.include_router(predict_router, prefix="/api", tags=["prediction"])
+    app.include_router(interactions_router, prefix="/api", tags=["interactions"])
+    app.include_router(bandit_router, prefix="/api", tags=["bandit"])
     
 except Exception as e:
     logger.error(f" Routes loading failed: {e}")

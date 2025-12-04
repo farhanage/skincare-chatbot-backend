@@ -22,6 +22,7 @@ class User(Base):
     orders = relationship("Order", back_populates="user", cascade="all, delete-orphan")
     chat_sessions = relationship("ChatSession", back_populates="user", cascade="all, delete-orphan")
     chat_messages = relationship("ChatMessage", back_populates="user", cascade="all, delete-orphan")
+    interactions = relationship("UserInteraction", back_populates="user", cascade="all, delete-orphan")
     
     def __repr__(self):
         return f"<User(id={self.id}, username='{self.username}', email='{self.email}', role='{self.role}')>"
@@ -131,3 +132,34 @@ class ChatMessage(Base):
     
     def __repr__(self):
         return f"<ChatMessage(id='{self.id}', chat_id='{self.chat_id}', is_bot={self.is_bot})>"
+
+
+class UserInteraction(Base):
+    __tablename__ = 'user_interactions'
+    
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey('users.id', ondelete='CASCADE'), nullable=False, index=True)
+    product_id = Column(Integer, ForeignKey('products.id', ondelete='CASCADE'), nullable=False, index=True)
+    action = Column(String(50), nullable=False)  # 'click', 'add_to_cart', 'view', etc.
+    reward = Column(Numeric(10, 2), default=0)  # 2.0 for add_to_cart, 1.0 for click, 0 for ignored
+    timestamp = Column(DateTime, default=lambda: datetime.now(timezone.utc), index=True)
+    
+    # Relationships
+    user = relationship("User", back_populates="interactions")
+    
+    def __repr__(self):
+        return f"<UserInteraction(id={self.id}, user_id={self.user_id}, product_id={self.product_id}, action='{self.action}', reward={self.reward})>"
+
+
+class BanditState(Base):
+    __tablename__ = 'bandit_state'
+    
+    product_id = Column(Integer, ForeignKey('products.id', ondelete='CASCADE'), primary_key=True, index=True)
+    impressions = Column(Integer, default=0)
+    rewards = Column(Numeric(10, 2), default=0)
+    last_updated = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    alpha = Column(Numeric(10, 2), default=1)
+    beta = Column(Numeric(10, 2), default=1)
+    
+    def __repr__(self):
+        return f"<BanditState(product_id={self.product_id}, impressions={self.impressions}, rewards={self.rewards}, alpha={self.alpha}, beta={self.beta})>"
