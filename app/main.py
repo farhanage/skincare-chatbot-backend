@@ -62,6 +62,7 @@ try:
     from app.routes.admin import router as admin_router
     from app.routes.orders import router as orders_router
     from app.routes.chats import router as chats_router
+    from app.routes.predict import router as predict_router
     
     # Register dengan prefix /api
     app.include_router(auth_router, prefix="/api/auth", tags=["authentication"])
@@ -69,6 +70,7 @@ try:
     app.include_router(admin_router, prefix="/api/debug", tags=["debug"])
     app.include_router(orders_router, prefix="/api/orders", tags=["orders"])
     app.include_router(chats_router, prefix="/api", tags=["chats"])
+    app.include_router(predict_router, prefix="/api", tags=["prediction"])
     
 except Exception as e:
     logger.error(f" Routes loading failed: {e}")
