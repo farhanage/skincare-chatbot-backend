@@ -5,6 +5,8 @@ from typing import Optional, List
 import logging
 from datetime import datetime
 from sqlalchemy.orm import Session
+import requests
+import os
 
 from app.services.auth_db import add_to_cart, get_cart_items, update_cart_item, clear_cart
 from app.services.connection import get_db
@@ -276,4 +278,57 @@ async def get_product(product_id: str, db: Session = Depends(get_db)):
         raise
     except Exception as e:
         logger.error(f"Get product error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/recommend/{product_id}")
+async def get_product_recommendations(
+    product_id: int,
+    top_k: int = 5
+):
+    """Get similar product recommendations from LLM API"""
+    try:
+        # Get LLM API URL from environment
+        llm_api_url = os.getenv("LLM_INFERENCE_API")
+        if not llm_api_url:
+            raise HTTPException(
+                status_code=500,
+                detail="LLM_INFERENCE_API not configured"
+            )
+        
+        # Build the similar products endpoint URL
+        similar_products_url = f"{llm_api_url.rstrip('/')}/api/similar-products/{product_id}"
+        
+        logger.info(f"Requesting recommendations from: {similar_products_url}?top_k={top_k}")
+        
+        # Make GET request to LLM API
+        response = requests.get(
+            similar_products_url,
+            params={"top_k": top_k},
+            timeout=30
+        )
+        response.raise_for_status()
+        
+        # Return the response from LLM API
+        result = response.json()
+        logger.info(f"Recommendations received for product {product_id}")
+        
+        return result
+        
+    except requests.exceptions.Timeout:
+        logger.error("LLM API timeout for product recommendations")
+        raise HTTPException(
+            status_code=504,
+            detail="Recommendation service timeout. Please try again."
+        )
+    except requests.exceptions.RequestException as e:
+        logger.error(f"LLM API error: {e}")
+        raise HTTPException(
+            status_code=502,
+            detail=f"Failed to get recommendations: {str(e)}"
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Product recommendation error: {e}")
         raise HTTPException(status_code=500, detail=str(e))

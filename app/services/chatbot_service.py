@@ -13,7 +13,7 @@ class ChatbotService:
     """Service for AI chatbot interactions using external LLM Inference API"""
     
     def __init__(self):
-        self.api_url = LLM_INFERENCE_API
+        self.api_url = LLM_INFERENCE_API + "/api/chat" 
         if not self.api_url:
             logger.warning("LLM_INFERENCE_API not configured")
     
