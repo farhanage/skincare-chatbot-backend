@@ -1,5 +1,5 @@
 # app/routes/bandit.py
-from fastapi import APIRouter, HTTPException, Depends, status
+from fastapi import APIRouter, HTTPException, Depends, status, Query
 from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
 from sqlalchemy.orm import Session
@@ -13,13 +13,6 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
-
-class BanditRecommendationRequest(BaseModel):
-    n_recommendations: int = 5
-    category: Optional[str] = None
-    exclude_product_ids: Optional[List[int]] = None
-
-
 class UpdateBanditRequest(BaseModel):
     product_id: int
     reward: float
@@ -32,9 +25,11 @@ class BanditRecommendationResponse(BaseModel):
     algorithm: str = "Thompson Sampling"
 
 
-@router.post("/bandit/recommend", response_model=BanditRecommendationResponse)
+@router.get("/bandit/recommend", response_model=BanditRecommendationResponse)
 async def get_bandit_recommendations(
-    request: BanditRecommendationRequest,
+    n_recommendations: int = 5,
+    category: Optional[str] = None,
+    exclude_product_ids: Optional[List[int]] = Query(None),
     current_user: dict = Depends(verify_token),
     db: Session = Depends(get_db)
 ):
@@ -57,13 +52,13 @@ async def get_bandit_recommendations(
         bandit = ThompsonSamplingBandit(db)
         
         recommendations = bandit.recommend_products(
-            n_recommendations=request.n_recommendations,
-            category=request.category,
-            exclude_product_ids=request.exclude_product_ids
+            n_recommendations=n_recommendations,
+            category=category,
+            exclude_product_ids=exclude_product_ids
         )
         
         logger.info(
-            f"User {current_user['id']} requested {request.n_recommendations} "
+            f"User {current_user['id']} requested {n_recommendations} "
             f"bandit recommendations, returned {len(recommendations)}"
         )
         

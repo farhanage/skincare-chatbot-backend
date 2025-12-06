@@ -88,15 +88,14 @@ Authorization: Bearer <token>
 
 #### Get Product Recommendations (Bandit)
 ```http
-POST /api/bandit/recommend
+GET /api/bandit/recommend?n_recommendations=5&category=serum&exclude_product_ids=1&exclude_product_ids=2
 Authorization: Bearer <token>
-Content-Type: application/json
+```
 
-{
-  "n_recommendations": 5,
-  "category": "serum",
-  "exclude_product_ids": [1, 2, 3]
-}
+Optional JSON-style query example:
+```http
+GET /api/bandit/recommend?n_recommendations=5&category=serum&exclude_product_ids=1,2,3
+Authorization: Bearer <token>
 ```
 
 **Response:**
@@ -346,15 +345,18 @@ const login = async (username, password) => {
 };
 
 // Get Bandit Recommendations
-const getRecommendations = async (n = 5) => {
+const getRecommendations = async (n = 5, category = null, excludeProductIds = []) => {
   const token = localStorage.getItem('token');
-  const response = await fetch('/api/bandit/recommend', {
-    method: 'POST',
+  const params = new URLSearchParams({ n_recommendations: n });
+  if (category) params.append('category', category);
+  if (excludeProductIds && excludeProductIds.length > 0) {
+    excludeProductIds.forEach(id => params.append('exclude_product_ids', id));
+  }
+  const response = await fetch(`/api/bandit/recommend?${params.toString()}`, {
+    method: 'GET',
     headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({ n_recommendations: n })
+      'Authorization': `Bearer ${token}`
+    }
   });
   return response.json();
 };
